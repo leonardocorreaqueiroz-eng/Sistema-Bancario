@@ -1,5 +1,6 @@
 package modelos;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -7,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 @Entity
 public class Aplicacao {
@@ -16,19 +18,19 @@ public class Aplicacao {
 
     @ManyToOne
     private Conta contaInvestimento;
-
-    private double valorAplicado;
+    @Column(precision = 19, scale = 8)
+    private BigDecimal valorAplicado;
 
     private LocalDate dataAplicacao;
 
     private LocalDate ultimaCapitalizacao;
-
-    private double taxaDiaria;
+    @Column(precision = 19, scale = 2)
+    private BigDecimal taxaDiaria;
 
     public Aplicacao() {}
 
-    public Aplicacao(Conta contaInvestimento, double valorAplicado,LocalDate dataAplicacao,
-                     LocalDate ultimaCapitalizacao, double taxaDiaria) {
+    public Aplicacao(Conta contaInvestimento, BigDecimal valorAplicado,LocalDate dataAplicacao,
+                     LocalDate ultimaCapitalizacao, BigDecimal taxaDiaria) {
         this.contaInvestimento = contaInvestimento;
         this.valorAplicado = valorAplicado;
         this.dataAplicacao = dataAplicacao;
@@ -36,7 +38,7 @@ public class Aplicacao {
         this.taxaDiaria = taxaDiaria;
     }
 
-    public double getValorAplicado() {
+    public BigDecimal getValorAplicado() {
         return valorAplicado;
     }
 
@@ -45,7 +47,7 @@ public class Aplicacao {
         return ultimaCapitalizacao;
     }
 
-    public double getTaxaDiaria() {
+    public BigDecimal getTaxaDiaria() {
         return taxaDiaria;
     }
 
@@ -53,7 +55,7 @@ public class Aplicacao {
         this.ultimaCapitalizacao = ultimaCapitalizacao;
     }
 
-    public void setValorAplicado(double valorAplicado) {
+    public void setValorAplicado(BigDecimal valorAplicado) {
         this.valorAplicado = valorAplicado;
     }
 }

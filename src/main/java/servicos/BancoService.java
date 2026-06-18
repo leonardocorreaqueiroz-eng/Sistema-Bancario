@@ -5,6 +5,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import util.HibernateUtil;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -58,7 +59,7 @@ public class BancoService {
         return new HoraData(date ,time);
     }
 
-    public boolean transferir(int origem, int destino, double valor,TipoMovimentacao tipo) {
+    public boolean transferir(int origem, int destino, BigDecimal valor,TipoMovimentacao tipo) {
         Transaction transaction = null;
         try (Session session = HibernateUtil.fcCliente.openSession()) {
             transaction = session.beginTransaction();
@@ -70,7 +71,7 @@ public class BancoService {
                 return false;
             }
             if (tipo.equals(TipoMovimentacao.DOC)){
-                if (valor > 4999){
+                if (valor.compareTo(BigDecimal.valueOf(4999)) > 0){
                     transaction.rollback();
                     return false;
                 }
@@ -86,35 +87,36 @@ public class BancoService {
                     return false;
                 }
 
-                double totalAplicado = aplicacoes.stream().mapToDouble(Aplicacao::getValorAplicado).sum();
+                BigDecimal totalAplicado = aplicacoes.stream().map(Aplicacao::getValorAplicado)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                if (valor > totalAplicado){
+                if (valor.compareTo(totalAplicado) > 0){
                     transaction.rollback();
                     return false;
                 }
 
 
-                double restante = valor;
+                BigDecimal restante = valor;
                 for (int i = aplicacoes.size() - 1; i >= 0; i--) {
-                    double valorAplicado = aplicacoes.get(i).getValorAplicado();
-                    double novoValor = valorAplicado - restante;
-                    if (valorAplicado >= restante) {
+                    BigDecimal valorAplicado = aplicacoes.get(i).getValorAplicado();
+                    BigDecimal novoValor = valorAplicado.subtract(restante);
+                    if (valorAplicado.compareTo(restante) >= 0) {
                         aplicacoes.get(i).setValorAplicado(novoValor);
 
-                        if (novoValor <= 0.000001){
+                        if (novoValor.compareTo(BigDecimal.valueOf(0.000001)) <= 0){
                             session.remove(aplicacoes.get(i));
                         }
 
-                        restante = 0;
+                        restante = BigDecimal.ZERO;
                         break;
                     }
 
-                    if (novoValor <= 0) {
-                        restante -= valorAplicado;
+                    if (novoValor.compareTo(BigDecimal.ZERO) <= 0) {
+                        restante = restante.subtract(valorAplicado);
                         session.remove(aplicacoes.get(i));
                     }
                 }
-                if (restante != 0) {
+                if (restante.compareTo(BigDecimal.ZERO) != 0) {
                     transaction.rollback();
                     return false;
                 }
@@ -132,7 +134,7 @@ public class BancoService {
                         valor,
                         dataAplicacao,
                         dataAplicacao,
-                        0.00042);
+                        new BigDecimal("0.00042"));
                 session.persist(aplicacao);
             }
 

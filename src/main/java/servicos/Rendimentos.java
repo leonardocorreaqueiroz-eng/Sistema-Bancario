@@ -1,12 +1,15 @@
 package servicos;
 
 import modelos.Conta;
+import modelos.Aplicacao;
+import modelos.Extrato;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import util.HibernateUtil;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -46,9 +49,9 @@ public class Rendimentos {
                     for(Aplicacao apl : aplicacaos) {
                         LocalDate data1 = apl.getUltimaCapitalizacao();
                         LocalDate data2 = LocalDate.now();
-                        double render = apl.getValorAplicado() * apl.getTaxaDiaria();
+                        BigDecimal render = apl.getValorAplicado().multiply(apl.getTaxaDiaria());
                         long dias = ChronoUnit.DAYS.between(data1,data2);
-                        double rendimento = render*dias;
+                        BigDecimal rendimento = render.multiply(BigDecimal.valueOf(dias));
                         if (dias == 0) continue;
                         destino.depositar(rendimento);
                         Extrato extrato = new Extrato(
@@ -59,7 +62,7 @@ public class Rendimentos {
                         extrato.setTipo(TipoMovimentacao.RENDIMENTO);
                         session.persist(extrato);
                         apl.setUltimaCapitalizacao(data2);
-                        apl.setValorAplicado(apl.getValorAplicado() + rendimento);
+                        apl.setValorAplicado(apl.getValorAplicado().add(rendimento));
                         session.merge(apl);
                     }
                     transaction.commit();

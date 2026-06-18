@@ -1,5 +1,6 @@
 package modelos;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -8,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
+import java.math.BigDecimal;
 
 
 @Entity
@@ -18,7 +20,8 @@ public  class Conta {
     @ManyToOne
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
-    protected double saldo;
+    @Column(precision = 19, scale = 2)
+    protected BigDecimal saldo;
     private String tipoConta;
 
     public Conta() {}
@@ -32,29 +35,29 @@ public  class Conta {
         return numero;
     }
 
-    public double getSaldo() {
+    public BigDecimal getSaldo() {
         return saldo;
     }
 
 
-    public boolean sacar(double valor) {
-        double TAXA_DE_SAQUE = 0.02;
-        double total = valor + valor * TAXA_DE_SAQUE;
-        if (valor <= 0 || total > saldo) return false;
-        saldo -= total;
+    public boolean sacar(BigDecimal valor) {
+        BigDecimal TAXA_DE_SAQUE = BigDecimal.valueOf(0.02);
+        BigDecimal total = valor.add(valor.multiply(TAXA_DE_SAQUE)) ;
+        if (valor.compareTo(BigDecimal.ZERO) <= 0 || saldo.compareTo(total) < 0) return false;
+        saldo = saldo.subtract(total);
         return true;
     }
 
-    public boolean depositar(double valor) {
-        if (valor <= 0) return false;
-        saldo += valor;
+    public boolean depositar(BigDecimal valor) {
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) return false;
+        saldo= saldo.add(valor);
         return true;
     }
 
-    public boolean transferir(double valor, Conta destino) {
-        if (valor <= 0 || saldo < valor) return false;
-        saldo -= valor;
-        destino.saldo += valor;
+    public boolean transferir(BigDecimal valor, Conta destino) {
+        if (valor.compareTo(BigDecimal.ZERO) <= 0 || saldo.compareTo(valor) < 0) return false;
+        saldo = saldo.subtract(valor);
+        destino.saldo = destino.saldo.add(valor);
         return true;
     }
     public String getTipoConta() {

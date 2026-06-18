@@ -1,4 +1,4 @@
-package servicos;
+package modelos;
 
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -7,8 +7,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import modelos.Conta;
+import servicos.HoraData;
 import servicos.TipoMovimentacao;
+
+import java.math.BigDecimal;
 
 @Entity
 public class Extrato {
@@ -17,7 +19,7 @@ public class Extrato {
     private long id;
     @Embedded
     private HoraData dataHora;
-    private double valor;
+    private BigDecimal valor;
 
     @ManyToOne
     @JoinColumn(name = "conta_origem_numero")
@@ -31,7 +33,7 @@ public class Extrato {
 
     public Extrato() {}
 
-    public Extrato(HoraData dataHora, double valor, Conta contaOrigem, Conta contaDestino) {
+    public Extrato(HoraData dataHora, BigDecimal valor, Conta contaOrigem, Conta contaDestino) {
         this.dataHora = dataHora;
         this.valor = valor;
         this.contaOrigem = contaOrigem;
@@ -42,11 +44,11 @@ public class Extrato {
         return dataHora;
     }
 
-    public double getValor() {
+    public BigDecimal getValor() {
         return valor;
     }
 
-    void setValor(Double rendimento) {
+    void setValor(BigDecimal rendimento) {
         valor = rendimento;
     }
 

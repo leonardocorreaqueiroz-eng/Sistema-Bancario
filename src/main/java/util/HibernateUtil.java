@@ -6,7 +6,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 import modelos.Aplicacao;
-import servicos.Extrato;
+import modelos.Extrato;
 import servicos.HoraData;
 
 public class HibernateUtil {

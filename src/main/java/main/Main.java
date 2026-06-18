@@ -4,12 +4,13 @@ import modelos.*;
         import org.hibernate.Session;
 import org.hibernate.Transaction;
 import servicos.BancoService;
-import servicos.Extrato;
+import modelos.Extrato;
 import servicos.Rendimentos;
 import util.HibernateUtil;
 import util.Validar;
 import servicos.TipoMovimentacao;
 
+import java.math.BigDecimal;
 import java.util.Scanner;
 
 public class Main {
@@ -130,7 +131,7 @@ public class Main {
                                     switch (inputInvest) {
                                         case 1 -> {
                                             System.out.println("Digite o valor que desja depositar:");
-                                            double valor = Double.parseDouble(scanner.nextLine());
+                                            BigDecimal valor = new BigDecimal(scanner.nextLine());
                                             if (banco.transferir(numeroContaCorrente,numeroContaInvestimento,
                                                     valor,TipoMovimentacao.APLICACAO)){
                                                 System.out.println("Depósito realizado!");
@@ -140,7 +141,7 @@ public class Main {
                                         }
                                         case 2 -> {
                                             System.out.println("Digite o valor que desja resgatar:");
-                                            double valor = Double.parseDouble(scanner.nextLine());
+                                            BigDecimal valor = new BigDecimal(scanner.nextLine());
                                             if (banco.transferir(numeroContaInvestimento,numeroContaCorrente,
                                                     valor,TipoMovimentacao.RESGATE)){
                                                 System.out.println("Saque realizado!");
@@ -164,7 +165,7 @@ public class Main {
                             case 1 -> {
 
                                 System.out.print("Valor do depósito: ");
-                                double valor = Double.parseDouble(scanner.nextLine());
+                                BigDecimal valor = new BigDecimal(scanner.nextLine());
 
                                 Conta conta = banco.buscarConta(numeroContaCorrente);
 
@@ -195,7 +196,7 @@ public class Main {
                             case 2 -> {
 
                                 System.out.print("Valor do saque: ");
-                                double valor = Double.parseDouble(scanner.nextLine());
+                                BigDecimal valor = new BigDecimal(scanner.nextLine());
 
                                 Conta conta = banco.buscarConta(numeroContaCorrente);
 
@@ -244,7 +245,7 @@ public class Main {
                                 int destino = Integer.parseInt(scanner.nextLine());
 
                                 System.out.print("Valor: ");
-                                double valor = Double.parseDouble(scanner.nextLine());
+                                BigDecimal valor = new BigDecimal(scanner.nextLine());
 
                                 System.out.println("Selecione a forma de transferencia:");
                                 System.out.println("""
