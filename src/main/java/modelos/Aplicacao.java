@@ -26,16 +26,28 @@ public class Aplicacao {
     private LocalDate ultimaCapitalizacao;
     @Column(precision = 19, scale = 2)
     private BigDecimal taxaDiaria;
+    private StatusAplicacao status;
 
     public Aplicacao() {}
 
-    public Aplicacao(Conta contaInvestimento, BigDecimal valorAplicado,LocalDate dataAplicacao,
-                     LocalDate ultimaCapitalizacao, BigDecimal taxaDiaria) {
+    public Aplicacao(Conta contaInvestimento,
+                     BigDecimal valorAplicado,
+                     LocalDate dataAplicacao,
+                     LocalDate ultimaCapitalizacao,
+                     BigDecimal taxaDiaria) {
         this.contaInvestimento = contaInvestimento;
         this.valorAplicado = valorAplicado;
         this.dataAplicacao = dataAplicacao;
         this.ultimaCapitalizacao = ultimaCapitalizacao;
         this.taxaDiaria = taxaDiaria;
+    }
+
+    public void setStatusAplicacao(StatusAplicacao status) {
+        this.status = status;
+    }
+
+    public StatusAplicacao getStatusAplicacao() {
+        return status;
     }
 
     public BigDecimal getValorAplicado() {

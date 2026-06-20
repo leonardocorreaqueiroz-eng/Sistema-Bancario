@@ -2,6 +2,8 @@ package modelos;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+
 @Entity
 public class Cliente {
 
@@ -10,11 +12,12 @@ public class Cliente {
     private Long id;
 
     private String nome;
+    @Column(unique = true)
     private String cpf;
-
+    private LocalDate dataDeCriacao;
     protected Cliente() {}
 
-    public Cliente(String nome, String cpf) {
+    public Cliente(String nome, String cpf, LocalDate dataDeCriacao) {
         this.nome = nome;
         this.cpf = cpf;
     }

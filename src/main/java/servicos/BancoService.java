@@ -15,15 +15,7 @@ public class BancoService {
 
 
     public Conta criarConta(Cliente cliente, TipoConta tipo) {
-        Conta conta;
-
-        if (tipo == TipoConta.CORRENTE) {
-            conta = new Conta(cliente,"Corrente");
-        } else {
-            conta = new Conta(cliente,"Investimento");
-        }
-
-        return conta;
+        return new Conta(cliente,tipo,LocalDate.now());
     }
 
     public boolean cpfExiste(String cpf) {
@@ -104,7 +96,7 @@ public class BancoService {
                         aplicacoes.get(i).setValorAplicado(novoValor);
 
                         if (novoValor.compareTo(BigDecimal.valueOf(0.000001)) <= 0){
-                            session.remove(aplicacoes.get(i));
+                            aplicacoes.get(i).setStatusAplicacao(StatusAplicacao.RESGATADA);
                         }
 
                         restante = BigDecimal.ZERO;
@@ -113,7 +105,7 @@ public class BancoService {
 
                     if (novoValor.compareTo(BigDecimal.ZERO) <= 0) {
                         restante = restante.subtract(valorAplicado);
-                        session.remove(aplicacoes.get(i));
+                        aplicacoes.get(i).setStatusAplicacao(StatusAplicacao.RESGATADA);
                     }
                 }
                 if (restante.compareTo(BigDecimal.ZERO) != 0) {
@@ -135,6 +127,7 @@ public class BancoService {
                         dataAplicacao,
                         dataAplicacao,
                         new BigDecimal("0.00042"));
+                aplicacao.setStatusAplicacao(StatusAplicacao.ATIVO);
                 session.persist(aplicacao);
             }
 

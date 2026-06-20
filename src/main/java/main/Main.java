@@ -11,6 +11,7 @@ import util.Validar;
 import servicos.TipoMovimentacao;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Scanner;
 
 public class Main {
@@ -54,7 +55,7 @@ public class Main {
 
                     TipoConta tipo = TipoConta.CORRENTE;
                     TipoConta tipo2 = TipoConta.INVESTIMENTO;
-                    Cliente cliente = new Cliente(nome, cpf);
+                    Cliente cliente = new Cliente(nome, cpf, LocalDate.now());
                     Conta contaCorrente = banco.criarConta(cliente, tipo);
                     Conta contaInvestimento = banco.criarConta(cliente, tipo2);
                     try (Session session = HibernateUtil.fcCliente.openSession()) {
@@ -80,7 +81,7 @@ public class Main {
                                         Conta.class
                                 )
                                 .setParameter("cpf", CPF)
-                                .setParameter("tipo", "CORRENTE")
+                                .setParameter("tipo", TipoConta.CORRENTE.toString())
                                 .getSingleResultOrNull();
 
                         Conta contaInvestimento = session.createQuery(
@@ -88,7 +89,7 @@ public class Main {
                                         Conta.class
                                 )
                                 .setParameter("cpf", CPF)
-                                .setParameter("tipo", "INVESTIMENTO")
+                                .setParameter("tipo", TipoConta.INVESTIMENTO.toString())
                                 .getSingleResultOrNull();
 
                         numeroContaCorrente = contaCorrente != null

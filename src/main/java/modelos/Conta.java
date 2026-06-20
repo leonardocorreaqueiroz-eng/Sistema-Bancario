@@ -2,6 +2,8 @@ package modelos;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -10,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 
 @Entity
@@ -21,14 +24,17 @@ public  class Conta {
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
     @Column(precision = 19, scale = 2)
-    protected BigDecimal saldo;
-    private String tipoConta;
+    protected BigDecimal saldo = BigDecimal.ZERO;
+    @Enumerated(EnumType.STRING)
+    private TipoConta tipoConta;
+    private LocalDate dataDeCriacao;
 
     public Conta() {}
 
-    public Conta(Cliente cliente, String tipoConta) {
+    public Conta(Cliente cliente, TipoConta tipoConta, LocalDate dataDeCriacao) {
         this.cliente = cliente;
         this.tipoConta = tipoConta;
+        this.dataDeCriacao = dataDeCriacao;
     }
 
     public int getNumero() {
