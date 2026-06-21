@@ -66,7 +66,7 @@ public  class Conta {
         destino.saldo = destino.saldo.add(valor);
         return true;
     }
-    public String getTipoConta() {
+    public TipoConta getTipoConta() {
         return tipoConta;
     }
 

@@ -4,6 +4,7 @@ import modelos.Conta;
 import modelos.Aplicacao;
 import modelos.Extrato;
 
+import modelos.TipoConta;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -15,6 +16,8 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static main.repository.AplicacaoRepository.listarAplicacoes;
+
 public class Rendimentos {
     private final int contaOrigem;
     private final int contaDestino;
@@ -23,12 +26,6 @@ public class Rendimentos {
         this.contaOrigem = contaOrigem;
         this.contaDestino = contaDestino;
     }
-
-    public boolean verficarTipo(String tipo1, String tipo2){
-        return tipo1.equalsIgnoreCase("Corrente")
-                && tipo2.equalsIgnoreCase("Investimento");
-    }
-
 
     public void aplicarRendimentos(){
         Transaction transaction = null;
@@ -40,12 +37,14 @@ public class Rendimentos {
             }
             if (origem.getCliente().getCpf().equals(destino.getCliente().getCpf())) {
 
-                if (verficarTipo(origem.getTipoConta(), destino.getTipoConta())){
-                    List<Aplicacao> aplicacaos = session.createQuery("from Aplicacao apl " +
-                                    "where apl.contaInvestimento = :conta ",Aplicacao.class)
-                            .setParameter("conta",destino)
-                            .getResultList();
+                if (origem.getTipoConta().equals(TipoConta.CORRENTE)
+                        && destino.getTipoConta().equals(TipoConta.INVESTIMENTO)){
                     transaction = session.beginTransaction();
+                    List<Aplicacao> aplicacaos = listarAplicacoes(destino);
+                    if (aplicacaos.isEmpty()) {
+                        transaction.rollback();
+                        return;
+                    }
                     for(Aplicacao apl : aplicacaos) {
                         LocalDate data1 = apl.getUltimaCapitalizacao();
                         LocalDate data2 = LocalDate.now();

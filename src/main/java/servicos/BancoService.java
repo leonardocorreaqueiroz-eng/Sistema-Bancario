@@ -2,13 +2,19 @@ package servicos;
 
 import modelos.*;
 import org.hibernate.Session;
-import org.hibernate.Transaction;
 import util.HibernateUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+
+
+import static main.repository.AplicacaoRepository.salvarAplicacao;
+import static main.repository.AplicacaoRepository.saqueDasAplicacoes;
+import static main.repository.ClienteRepository.buscarPorCpf;
+import static main.repository.ContaRepository.buscarConta;
+import static main.repository.ExtratoRepository.salvarExtrato;
 
 
 public class BancoService {
@@ -19,20 +25,11 @@ public class BancoService {
     }
 
     public boolean cpfExiste(String cpf) {
-        try (Session session = HibernateUtil.fcCliente.openSession()) {
 
-            Integer quantidade = session.createQuery("select 1 from Conta c " +
-                            "where c.cliente.cpf = :cpf", Integer.class)
-                    .setParameter("cpf", cpf).uniqueResult();
+        return buscarPorCpf(cpf,TipoConta.CORRENTE) != null;
 
-            return quantidade != null;
-        }
     }
-    public Conta buscarConta(int numero) {
-        try (Session session = HibernateUtil.fcCliente.openSession()) {
-            return session.find(Conta.class, numero);
-        }
-    }
+
 //    public boolean cpfExiste(String cpf) {
 //        return contas.stream()
 //                .anyMatch(c -> c.getCliente().getCpf().equals(cpf));
@@ -52,69 +49,23 @@ public class BancoService {
     }
 
     public boolean transferir(int origem, int destino, BigDecimal valor,TipoMovimentacao tipo) {
-        Transaction transaction = null;
-        try (Session session = HibernateUtil.fcCliente.openSession()) {
-            transaction = session.beginTransaction();
-            Conta contaOrigem = session.find(Conta.class, origem);
-            Conta contaDestino = session.find(Conta.class, destino);
+
+            Conta contaOrigem = buscarConta(origem);
+            Conta contaDestino = buscarConta(destino);
 
             if (contaOrigem == null || contaDestino == null){
-                transaction.rollback();
                 return false;
             }
             if (tipo.equals(TipoMovimentacao.DOC)){
                 if (valor.compareTo(BigDecimal.valueOf(4999)) > 0){
-                    transaction.rollback();
                     return false;
                 }
             }
 
             if (tipo.equals(TipoMovimentacao.RESGATE)) {
-                List<Aplicacao> aplicacoes = session.createQuery("from Aplicacao apl " +
-                                "where apl.contaInvestimento = :conta", Aplicacao.class)
-                        .setParameter("conta", contaOrigem).getResultList();
-
-                if (aplicacoes.isEmpty()) {
-                    transaction.rollback();
-                    return false;
-                }
-
-                BigDecimal totalAplicado = aplicacoes.stream().map(Aplicacao::getValorAplicado)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                if (valor.compareTo(totalAplicado) > 0){
-                    transaction.rollback();
-                    return false;
-                }
-
-
-                BigDecimal restante = valor;
-                for (int i = aplicacoes.size() - 1; i >= 0; i--) {
-                    BigDecimal valorAplicado = aplicacoes.get(i).getValorAplicado();
-                    BigDecimal novoValor = valorAplicado.subtract(restante);
-                    if (valorAplicado.compareTo(restante) >= 0) {
-                        aplicacoes.get(i).setValorAplicado(novoValor);
-
-                        if (novoValor.compareTo(BigDecimal.valueOf(0.000001)) <= 0){
-                            aplicacoes.get(i).setStatusAplicacao(StatusAplicacao.RESGATADA);
-                        }
-
-                        restante = BigDecimal.ZERO;
-                        break;
-                    }
-
-                    if (novoValor.compareTo(BigDecimal.ZERO) <= 0) {
-                        restante = restante.subtract(valorAplicado);
-                        aplicacoes.get(i).setStatusAplicacao(StatusAplicacao.RESGATADA);
-                    }
-                }
-                if (restante.compareTo(BigDecimal.ZERO) != 0) {
-                    transaction.rollback();
-                    return false;
-                }
+                if (saqueDasAplicacoes(contaOrigem,valor)) return false;
             }
             if (!contaOrigem.transferir(valor, contaDestino)) {
-                transaction.rollback();
                 return false;
             }
 
@@ -128,7 +79,7 @@ public class BancoService {
                         dataAplicacao,
                         new BigDecimal("0.00042"));
                 aplicacao.setStatusAplicacao(StatusAplicacao.ATIVO);
-                session.persist(aplicacao);
+                salvarAplicacao(aplicacao);
             }
 
             Extrato extrato = new Extrato(
@@ -138,17 +89,8 @@ public class BancoService {
                     contaDestino
             );
             extrato.setTipo(tipo);
-
-            session.persist(extrato);
-            transaction.commit();
+            salvarExtrato(extrato);
             return true;
-        } catch (Exception e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            System.out.println(e.getMessage());
-        }
-        return false;
     }
 
     public List<Conta> listarContas(String cpf) {

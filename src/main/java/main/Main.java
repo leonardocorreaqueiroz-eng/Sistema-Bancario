@@ -1,18 +1,21 @@
 package main;
 
 import modelos.*;
-        import org.hibernate.Session;
-import org.hibernate.Transaction;
 import servicos.BancoService;
 import modelos.Extrato;
 import servicos.Rendimentos;
-import util.HibernateUtil;
 import util.Validar;
 import servicos.TipoMovimentacao;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Scanner;
+
+import static java.util.Objects.isNull;
+import static main.repository.ContaRepository.buscarConta;
+import static main.repository.ClienteRepository.buscarPorCpf;
+import static main.repository.ContaRepository.cadastrarConta;
+import static main.repository.ExtratoRepository.salvarExtrato;
 
 public class Main {
 
@@ -58,14 +61,7 @@ public class Main {
                     Cliente cliente = new Cliente(nome, cpf, LocalDate.now());
                     Conta contaCorrente = banco.criarConta(cliente, tipo);
                     Conta contaInvestimento = banco.criarConta(cliente, tipo2);
-                    try (Session session = HibernateUtil.fcCliente.openSession()) {
-
-                        Transaction tx = session.beginTransaction();
-                        session.persist(cliente);
-                        session.persist(contaCorrente);
-                        session.persist(contaInvestimento);
-                        tx.commit();
-                    }
+                    if (!cadastrarConta(cliente, contaCorrente, contaInvestimento)) break;
 
                     System.out.println("Conta criada com sucesso!");
                     System.out.println("Número da conta corrente: " + contaCorrente.getNumero());
@@ -75,31 +71,19 @@ public class Main {
                     System.out.println("Digite seu CPF: ");
                     CPF = scanner.nextLine();
 
-                    try (Session session = HibernateUtil.fcCliente.openSession()) {
-                        Conta contaCorrente = session.createQuery(
-                                        "from Conta c where c.cliente.cpf = :cpf and upper(c.tipoConta) = :tipo",
-                                        Conta.class
-                                )
-                                .setParameter("cpf", CPF)
-                                .setParameter("tipo", TipoConta.CORRENTE.toString())
-                                .getSingleResultOrNull();
+                    Conta contaCorrente =
+                            buscarPorCpf(CPF,TipoConta.CORRENTE);
 
-                        Conta contaInvestimento = session.createQuery(
-                                        "from Conta c where c.cliente.cpf = :cpf and upper(c.tipoConta) = :tipo",
-                                        Conta.class
-                                )
-                                .setParameter("cpf", CPF)
-                                .setParameter("tipo", TipoConta.INVESTIMENTO.toString())
-                                .getSingleResultOrNull();
+                    Conta contaInvestimento =
+                            buscarPorCpf(CPF,TipoConta.INVESTIMENTO);
 
-                        numeroContaCorrente = contaCorrente != null
-                                ? contaCorrente.getNumero()
-                                : 0;
-
-                        numeroContaInvestimento = contaInvestimento != null
-                                ? contaInvestimento.getNumero()
-                                : 0;
+                    if (isNull(contaCorrente) || isNull(contaInvestimento)) {
+                        System.out.println("Conta não encontrada!");
+                        break;
                     }
+                    numeroContaCorrente = contaCorrente.getNumero();
+                    numeroContaInvestimento = contaInvestimento.getNumero();
+
                     boolean acesso;
                     acesso = true;
                     while (acesso) {
@@ -151,13 +135,14 @@ public class Main {
                                             }
                                         }
                                         case 3 -> {
-                                            try (Session session = HibernateUtil.fcCliente.openSession()) {
-
+                                                Conta conta = buscarConta(numeroContaInvestimento);
+                                                if (isNull(conta)) {
+                                                    System.out.println("Erro ao consultar saldo!");
+                                                    break;
+                                                }
                                                 Rendimentos rendimentos = new Rendimentos(numeroContaCorrente, numeroContaInvestimento);
                                                 rendimentos.aplicarRendimentos();
-                                                Conta conta = session.find(Conta.class, numeroContaInvestimento);
                                                 System.out.println("R$: " + conta.getSaldo());
-                                            }
                                         }
                                         default -> acesInvest = false;
                                     }
@@ -168,30 +153,24 @@ public class Main {
                                 System.out.print("Valor do depósito: ");
                                 BigDecimal valor = new BigDecimal(scanner.nextLine());
 
-                                Conta conta = banco.buscarConta(numeroContaCorrente);
+                                Conta conta = buscarConta(numeroContaCorrente);
 
                                 if (conta == null) {
                                     System.out.println("Conta não encontrada!");
                                     break;
                                 }
-                                try(Session session = HibernateUtil.fcCliente.openSession()) {
-                                    Transaction tx = session.beginTransaction();
 
                                     if (conta.depositar(valor)) {
-                                        Conta contaDep = session.find(Conta.class, numeroContaCorrente);
+                                        Conta contaDep = buscarConta(numeroContaCorrente);
                                         contaDep.depositar(valor);
                                         Extrato extrato =  new Extrato(banco.getTime(),valor,contaDep,contaDep);
                                         extrato.setTipo(TipoMovimentacao.DEPOSITO);
-                                        session.persist(extrato);
-                                        tx.commit();
+                                        salvarExtrato(extrato);
                                         System.out.println("Depósito realizado!");
 
                                     } else {
                                         System.out.println("Valor inválido!");
                                     }
-                                } catch (Exception e) {
-                                    System.out.println(e.getMessage());
-                                }
                             }
 
                             case 2 -> {
@@ -199,45 +178,36 @@ public class Main {
                                 System.out.print("Valor do saque: ");
                                 BigDecimal valor = new BigDecimal(scanner.nextLine());
 
-                                Conta conta = banco.buscarConta(numeroContaCorrente);
+                                Conta conta = buscarConta(numeroContaCorrente);
 
                                 if (conta == null) {
                                     System.out.println("Conta não encontrada!");
                                     break;
                                 }
-                                try (Session session = HibernateUtil.fcCliente.openSession()) {
 
                                     if (conta.sacar(valor)) {
-                                        Transaction tx = session.beginTransaction();
-                                        Conta contaSaq = session.find(Conta.class, numeroContaCorrente);
+                                        Conta contaSaq = buscarConta(numeroContaCorrente);
                                         contaSaq.sacar(valor);
                                         Extrato extrato =  new Extrato(banco.getTime(),valor,contaSaq,contaSaq);
                                         extrato.setTipo(TipoMovimentacao.SAQUE);
-                                        session.persist(extrato);
-                                        tx.commit();
+                                        salvarExtrato(extrato);
                                         System.out.println("Saque realizado!");
                                     } else {
                                         System.out.println("Saldo insuficiente ou valor inválido!");
                                     }
-                                } catch (Exception e) {
-                                    System.out.println(e.getMessage());
-                                }
                             }
 
                             case 3 -> {
 
-                                Conta conta = banco.buscarConta(numeroContaCorrente);
+                                Conta conta = buscarConta(numeroContaCorrente);
 
                                 if (conta == null) {
                                     System.out.println("Conta não encontrada!");
                                     break;
                                 }
-                                try(Session session = HibernateUtil.fcCliente.openSession()) {
-                                    Conta contaConsulta = session.find(Conta.class, numeroContaCorrente);
-                                    System.out.printf("Saldo: R$ %.2f\n", contaConsulta.getSaldo());
-                                } catch (Exception e) {
-                                    System.out.println(e.getMessage());
-                                }
+                                Conta contaConsulta = buscarConta(numeroContaCorrente);
+                                System.out.printf("Saldo: R$ %.2f\n", contaConsulta.getSaldo());
+
                             }
 
                             case 4 -> {
