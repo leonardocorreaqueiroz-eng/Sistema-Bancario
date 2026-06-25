@@ -12,7 +12,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+
+import static modelos.RegrasDeBanco.TAXA_SAQUE;
 
 
 @Entity
@@ -24,7 +27,7 @@ public  class Conta {
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
     @Column(precision = 19, scale = 2)
-    protected BigDecimal saldo = BigDecimal.ZERO;
+    private BigDecimal saldo = BigDecimal.ZERO;
     @Enumerated(EnumType.STRING)
     private TipoConta tipoConta;
     private LocalDate dataDeCriacao;
@@ -47,30 +50,55 @@ public  class Conta {
 
 
     public boolean sacar(BigDecimal valor) {
-        BigDecimal TAXA_DE_SAQUE = BigDecimal.valueOf(0.02);
-        BigDecimal total = valor.add(valor.multiply(TAXA_DE_SAQUE)) ;
+        BigDecimal total = valor.add(valor.multiply(TAXA_SAQUE)) ;
         if (valor.compareTo(BigDecimal.ZERO) <= 0 || saldo.compareTo(total) < 0) return false;
-        saldo = saldo.subtract(total);
-        return true;
+        return sacarTransferencia(total);
     }
 
     public boolean depositar(BigDecimal valor) {
         if (valor.compareTo(BigDecimal.ZERO) <= 0) return false;
-        saldo= saldo.add(valor);
+        saldo= saldo.add(valor.setScale(2, RoundingMode.HALF_EVEN));
         return true;
     }
 
     public boolean transferir(BigDecimal valor, Conta destino) {
-        if (valor.compareTo(BigDecimal.ZERO) <= 0 || saldo.compareTo(valor) < 0) return false;
-        saldo = saldo.subtract(valor);
-        destino.saldo = destino.saldo.add(valor);
+        if (!sacarTransferencia(valor)) return false;
+        depositarTransferencia(valor, destino);
         return true;
     }
+
+    private static void depositarTransferencia(BigDecimal valor, Conta destino) {
+        destino.saldo = destino.saldo.add(valor);
+    }
+
+    private boolean sacarTransferencia(BigDecimal valor) {
+        if (valor.compareTo(BigDecimal.ZERO) <= 0 || saldo.compareTo(valor) < 0) return false;
+        saldo = saldo.subtract(valor);
+        return true;
+    }
+
+
     public TipoConta getTipoConta() {
         return tipoConta;
     }
 
     public Cliente getCliente() {
         return cliente;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+
+        if (!(obj instanceof Conta conta))
+            return false;
+
+        return numero == conta.numero;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(numero);
     }
 }

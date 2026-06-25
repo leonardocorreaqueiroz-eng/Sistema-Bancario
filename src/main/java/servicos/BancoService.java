@@ -9,12 +9,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-
-import static main.repository.AplicacaoRepository.salvarAplicacao;
-import static main.repository.AplicacaoRepository.saqueDasAplicacoes;
 import static main.repository.ClienteRepository.buscarPorCpf;
-import static main.repository.ContaRepository.buscarConta;
-import static main.repository.ExtratoRepository.salvarExtrato;
+import static main.repository.TransferenciaRepository.transacao;
 
 
 public class BancoService {
@@ -26,7 +22,7 @@ public class BancoService {
 
     public boolean cpfExiste(String cpf) {
 
-        return buscarPorCpf(cpf,TipoConta.CORRENTE) != null;
+        return buscarPorCpf(cpf) != null;
 
     }
 
@@ -49,48 +45,8 @@ public class BancoService {
     }
 
     public boolean transferir(int origem, int destino, BigDecimal valor,TipoMovimentacao tipo) {
+      return transacao(origem,destino,valor,tipo,getTime());
 
-            Conta contaOrigem = buscarConta(origem);
-            Conta contaDestino = buscarConta(destino);
-
-            if (contaOrigem == null || contaDestino == null){
-                return false;
-            }
-            if (tipo.equals(TipoMovimentacao.DOC)){
-                if (valor.compareTo(BigDecimal.valueOf(4999)) > 0){
-                    return false;
-                }
-            }
-
-            if (tipo.equals(TipoMovimentacao.RESGATE)) {
-                if (saqueDasAplicacoes(contaOrigem,valor)) return false;
-            }
-            if (!contaOrigem.transferir(valor, contaDestino)) {
-                return false;
-            }
-
-            if (tipo.equals(TipoMovimentacao.APLICACAO)){
-                HoraData agora = getTime();
-
-                LocalDate dataAplicacao = agora.getData();
-                Aplicacao aplicacao = new Aplicacao(contaDestino,
-                        valor,
-                        dataAplicacao,
-                        dataAplicacao,
-                        new BigDecimal("0.00042"));
-                aplicacao.setStatusAplicacao(StatusAplicacao.ATIVO);
-                salvarAplicacao(aplicacao);
-            }
-
-            Extrato extrato = new Extrato(
-                    getTime(),
-                    valor,
-                    contaOrigem,
-                    contaDestino
-            );
-            extrato.setTipo(tipo);
-            salvarExtrato(extrato);
-            return true;
     }
 
     public List<Conta> listarContas(String cpf) {

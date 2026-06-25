@@ -20,6 +20,7 @@ public class Cliente {
     public Cliente(String nome, String cpf, LocalDate dataDeCriacao) {
         this.nome = nome;
         this.cpf = cpf;
+        this.dataDeCriacao = dataDeCriacao;
     }
 
     // getters

@@ -1,5 +1,6 @@
 package main.repository;
 
+import modelos.Cliente;
 import modelos.Conta;
 import modelos.TipoConta;
 import org.hibernate.Session;
@@ -11,10 +12,20 @@ public class ClienteRepository {
     public static Conta buscarPorCpf(String cpf, TipoConta tipoConta) {
         try (Session session = HibernateUtil.fcCliente.openSession()) {
             Optional<Conta> conta = Optional.ofNullable(session.createQuery(
-                            "from Conta c where c.cliente.cpf = :cpf and upper(c.tipoConta) = :tipo",
+                            "from Conta c where c.cliente.cpf = :cpf and c.tipoConta = :tipo",
                             Conta.class)
                     .setParameter("cpf", cpf)
                     .setParameter("tipo", tipoConta)
+                    .uniqueResult());
+            return conta.orElse(null);
+        }
+    }
+    public static Cliente buscarPorCpf(String cpf) {
+        try (Session session = HibernateUtil.fcCliente.openSession()) {
+            Optional<Cliente> conta = Optional.ofNullable(session.createQuery(
+                            "from Cliente c where c.cpf = :cpf",
+                            Cliente.class)
+                    .setParameter("cpf", cpf)
                     .uniqueResult());
             return conta.orElse(null);
         }

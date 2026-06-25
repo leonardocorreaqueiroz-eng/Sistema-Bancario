@@ -1,9 +1,10 @@
 package main;
 
+import main.movimentacoes.Deposito;
+import main.movimentacoes.Saque;
 import modelos.*;
+import servicos.AplicacaoDeRendimentos;
 import servicos.BancoService;
-import modelos.Extrato;
-import servicos.Rendimentos;
 import util.Validar;
 import servicos.TipoMovimentacao;
 
@@ -12,10 +13,12 @@ import java.time.LocalDate;
 import java.util.Scanner;
 
 import static java.util.Objects.isNull;
+import static main.repository.ContaRepository.aplicarDeposito;
+import static main.repository.ContaRepository.aplicarSaque;
 import static main.repository.ContaRepository.buscarConta;
 import static main.repository.ClienteRepository.buscarPorCpf;
 import static main.repository.ContaRepository.cadastrarConta;
-import static main.repository.ExtratoRepository.salvarExtrato;
+import static main.repository.ExtratoRepository.verExtratos;
 
 public class Main {
 
@@ -95,7 +98,8 @@ public class Main {
                     3 - Consultar saldo
                     4 - Transferir
                     5 - Listar contas
-                    6 - Sair da Conta
+                    6 - Ver Extrato
+                    7 - Sair da Conta
                     """);
                         int input = Integer.parseInt(scanner.nextLine());
                         switch (input) {
@@ -140,8 +144,7 @@ public class Main {
                                                     System.out.println("Erro ao consultar saldo!");
                                                     break;
                                                 }
-                                                Rendimentos rendimentos = new Rendimentos(numeroContaCorrente, numeroContaInvestimento);
-                                                rendimentos.aplicarRendimentos();
+                                                AplicacaoDeRendimentos.aplicarRendimentos(conta);
                                                 System.out.println("R$: " + conta.getSaldo());
                                         }
                                         default -> acesInvest = false;
@@ -159,18 +162,10 @@ public class Main {
                                     System.out.println("Conta não encontrada!");
                                     break;
                                 }
-
-                                    if (conta.depositar(valor)) {
-                                        Conta contaDep = buscarConta(numeroContaCorrente);
-                                        contaDep.depositar(valor);
-                                        Extrato extrato =  new Extrato(banco.getTime(),valor,contaDep,contaDep);
-                                        extrato.setTipo(TipoMovimentacao.DEPOSITO);
-                                        salvarExtrato(extrato);
+                                        Deposito deposito =  new Deposito(conta,valor,
+                                                banco.getTime().getData(),banco.getTime().getHora());
+                                        aplicarDeposito(conta,valor,deposito);
                                         System.out.println("Depósito realizado!");
-
-                                    } else {
-                                        System.out.println("Valor inválido!");
-                                    }
                             }
 
                             case 2 -> {
@@ -185,16 +180,11 @@ public class Main {
                                     break;
                                 }
 
-                                    if (conta.sacar(valor)) {
-                                        Conta contaSaq = buscarConta(numeroContaCorrente);
-                                        contaSaq.sacar(valor);
-                                        Extrato extrato =  new Extrato(banco.getTime(),valor,contaSaq,contaSaq);
-                                        extrato.setTipo(TipoMovimentacao.SAQUE);
-                                        salvarExtrato(extrato);
-                                        System.out.println("Saque realizado!");
-                                    } else {
-                                        System.out.println("Saldo insuficiente ou valor inválido!");
-                                    }
+                                Saque saque =  new Saque(conta,valor,
+                                        banco.getTime().getData(),banco.getTime().getHora());
+                                aplicarSaque(conta,valor,saque);
+                                System.out.println("Saque realizado!");
+
                             }
 
                             case 3 -> {
@@ -205,9 +195,7 @@ public class Main {
                                     System.out.println("Conta não encontrada!");
                                     break;
                                 }
-                                Conta contaConsulta = buscarConta(numeroContaCorrente);
-                                System.out.printf("Saldo: R$ %.2f\n", contaConsulta.getSaldo());
-
+                                System.out.printf("Saldo: R$ %.2f\n", conta.getSaldo());
                             }
 
                             case 4 -> {
@@ -259,8 +247,10 @@ public class Main {
                                     );
                                 }
                             }
-
-                            case 6 -> acesso = false;
+                            case 6 -> {
+                                verExtratos(CPF).forEach(System.out::println);
+                            }
+                            case 7 -> acesso = false;
                         }
                     }
                 }
