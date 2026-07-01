@@ -1,36 +1,36 @@
 package main.repository;
 
+import main.exceptions.AplicacaoException;
 import main.movimentacoes.Aplicacao;
 import modelos.Conta;
 import modelos.StatusAplicacao;
 import org.hibernate.Session;
-import org.hibernate.Transaction;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public class AplicacaoRepository {
     public static List<Aplicacao> listarAplicacoes(Session session,Conta conta){
-           return session.createQuery("from Aplicacao apl " +
+           List<Aplicacao> aplicacaos = session.createQuery("from Aplicacao apl " +
                             "where apl.conta = :conta " +
                            "and apl.status = :status",Aplicacao.class)
                     .setParameter("conta",conta)
                     .setParameter("status",StatusAplicacao.ATIVO)
                     .getResultList();
+            if (aplicacaos.isEmpty()) {
+               throw new AplicacaoException("Nenhuma aplicacao foi encontrada");
+            }
+            return aplicacaos;
     }
 
-    public static boolean saqueDasAplicacoes(Session session, Conta conta, BigDecimal valor){
+    public static void saqueDasAplicacoes(Session session, Conta conta, BigDecimal valor){
             List<Aplicacao> aplicacoes = listarAplicacoes(session,conta);
-
-            if (aplicacoes.isEmpty()) {
-                return false;
-            }
 
             BigDecimal totalAplicado = aplicacoes.stream().map(Aplicacao::getValorAplicado)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             if (valor.compareTo(totalAplicado) > 0){
-                return false;
+                throw new AplicacaoException();
             }
 
 
@@ -46,8 +46,7 @@ public class AplicacaoRepository {
             }
 
             if (restante.compareTo(BigDecimal.ZERO) != 0) {
-                return false;
+                throw new AplicacaoException();
             }
-            return true;
     }
 }

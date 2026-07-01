@@ -27,7 +27,6 @@ public class Aplicacao {
     private BigDecimal valorAplicado;
     private LocalDate dataAplicacao;
     private LocalDate ultimaCapitalizacao;
-    @Column(precision = 19, scale = 8)
     private BigDecimal taxaDiaria;
     @Enumerated(EnumType.STRING)
     private StatusAplicacao status;
@@ -59,7 +58,7 @@ public class Aplicacao {
 
             valorAplicado = valorAplicado.subtract(valor);
 
-            if (valorAplicado.compareTo(new BigDecimal("0.000001")) <= 0) {
+            if (valorAplicado.compareTo(BigDecimal.ZERO) <= 0) {
                 status = StatusAplicacao.RESGATADA;
             }
 

@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import main.exceptions.SaldoInsuficienteException;
+import main.exceptions.ValorInvalidoException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -49,32 +51,32 @@ public  class Conta {
     }
 
 
-    public boolean sacar(BigDecimal valor) {
+    public void sacar(BigDecimal valor) {
         BigDecimal total = valor.add(valor.multiply(TAXA_SAQUE)) ;
-        if (valor.compareTo(BigDecimal.ZERO) <= 0 || saldo.compareTo(total) < 0) return false;
-        return sacarTransferencia(total);
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) throw new ValorInvalidoException(valor);
+        if (saldo.compareTo(total) < 0) throw new SaldoInsuficienteException();
+        sacarTransferencia(total.setScale(2, RoundingMode.HALF_EVEN));
     }
 
-    public boolean depositar(BigDecimal valor) {
-        if (valor.compareTo(BigDecimal.ZERO) <= 0) return false;
+    public void depositar(BigDecimal valor) {
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) throw new ValorInvalidoException(valor);
         saldo= saldo.add(valor.setScale(2, RoundingMode.HALF_EVEN));
-        return true;
     }
 
-    public boolean transferir(BigDecimal valor, Conta destino) {
-        if (!sacarTransferencia(valor)) return false;
+    public void transferir(BigDecimal valor, Conta destino) {
+        sacarTransferencia(valor);
         depositarTransferencia(valor, destino);
-        return true;
     }
 
     private static void depositarTransferencia(BigDecimal valor, Conta destino) {
-        destino.saldo = destino.saldo.add(valor);
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) throw new ValorInvalidoException(valor);
+        destino.saldo = destino.saldo.add(valor.setScale(2, RoundingMode.HALF_EVEN));
     }
 
-    private boolean sacarTransferencia(BigDecimal valor) {
-        if (valor.compareTo(BigDecimal.ZERO) <= 0 || saldo.compareTo(valor) < 0) return false;
-        saldo = saldo.subtract(valor);
-        return true;
+    private void sacarTransferencia(BigDecimal valor) {
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) throw new ValorInvalidoException(valor);
+        if (saldo.compareTo(valor) < 0) throw new SaldoInsuficienteException();
+        saldo = saldo.subtract(valor.setScale(2, RoundingMode.HALF_EVEN));
     }
 
 
@@ -93,6 +95,8 @@ public  class Conta {
 
         if (!(obj instanceof Conta conta))
             return false;
+
+        if (numero == 0 || conta.numero == 0) return false;
 
         return numero == conta.numero;
     }

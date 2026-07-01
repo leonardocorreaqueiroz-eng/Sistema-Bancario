@@ -1,5 +1,6 @@
 package servicos;
 
+import main.exceptions.ContaException;
 import modelos.*;
 import org.hibernate.Session;
 import util.HibernateUtil;
@@ -20,23 +21,11 @@ public class BancoService {
         return new Conta(cliente,tipo,LocalDate.now());
     }
 
-    public boolean cpfExiste(String cpf) {
+    public void cpfExiste(String cpf) {
 
-        return buscarPorCpf(cpf) != null;
+        buscarPorCpf(cpf).orElseThrow(() -> new ContaException("CPF já cadastrado!"));
 
     }
-
-//    public boolean cpfExiste(String cpf) {
-//        return contas.stream()
-//                .anyMatch(c -> c.getCliente().getCpf().equals(cpf));
-//    }
-//
-//    public Conta buscarConta(int numero) {
-//        return contas.stream()
-//                .filter(c -> c.getNumero() == numero)
-//                .findFirst()
-//                .orElse(null);
-//    }
 
     public HoraData getTime(){
         LocalDate date = LocalDate.now();
@@ -44,9 +33,8 @@ public class BancoService {
         return new HoraData(date ,time);
     }
 
-    public boolean transferir(int origem, int destino, BigDecimal valor,TipoMovimentacao tipo) {
-      return transacao(origem,destino,valor,tipo,getTime());
-
+    public void transferir(int origem, int destino, BigDecimal valor,TipoMovimentacao tipo) {
+        transacao(origem,destino,valor,tipo,getTime());
     }
 
     public List<Conta> listarContas(String cpf) {
